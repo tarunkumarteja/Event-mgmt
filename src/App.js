@@ -17,14 +17,22 @@ function App() {
 
   return (
     <Router>
+  <div
+    className="min-h-screen bg-cover bg-center"
+    style={{
+      backgroundImage:
+        "url('https://images.unsplash.com/photo-1557682250-33bd709cbe85')",
+    }}
+  >
+    {/* overlay for readability */}
+    <div className="min-h-screen bg-black/20">
       <div className="flex">
         <Sidebar />
 
-        {/* 🔥 DYNAMIC MARGIN */}
         <div
           className={`${
             isSidebarOpen ? "ml-60" : "ml-20"
-          } w-full bg-gray-100 min-h-screen p-4 transition-all duration-300`}
+          } w-full p-4 transition-all duration-300`}
         >
           <Routes>
             <Route path="/" element={<Dashboard />} />
@@ -37,7 +45,9 @@ function App() {
           </Routes>
         </div>
       </div>
-    </Router>
+    </div>
+  </div>
+</Router>
   );
 }
 
