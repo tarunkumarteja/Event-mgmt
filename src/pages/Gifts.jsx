@@ -1,114 +1,241 @@
 import { useState, useEffect } from "react";
 
 function Gifts() {
-  // LOAD FROM STORAGE
   const [transactions, setTransactions] = useState(() => {
-    const saved = localStorage.getItem("transactions");
+    const saved = localStorage.getItem("money");
     return saved ? JSON.parse(saved) : [];
   });
 
-  const [money, setMoney] = useState(() => {
-    const saved = localStorage.getItem("money");
-    return saved ? JSON.parse(saved) : 0;
+  const [deductions, setDeductions] = useState(() => {
+    const saved = localStorage.getItem("deductions");
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [name, setName] = useState("");
   const [amount, setAmount] = useState("");
-  const [type, setType] = useState("add");
 
-  // AUTO SAVE
+  const [dName, setDName] = useState("");
+  const [dAmount, setDAmount] = useState("");
+
+  const [search, setSearch] = useState("");
+
   useEffect(() => {
-    localStorage.setItem("transactions", JSON.stringify(transactions));
-    localStorage.setItem("money", JSON.stringify(money));
-  }, [transactions, money]);
+    localStorage.setItem("money", JSON.stringify(transactions));
+  }, [transactions]);
 
+  useEffect(() => {
+    localStorage.setItem("deductions", JSON.stringify(deductions));
+  }, [deductions]);
+
+  // ADD INCOME
   const addTransaction = () => {
-    if (!name || !amount) return alert("Fill all fields");
+    if (!name || !amount) return;
 
-    const value = Number(amount);
-
-    const newTransaction = {
-      name,
-      amount: value,
-      type,
-    };
-
-    let newBalance =
-      type === "add" ? money + value : money - value;
-
-    setTransactions([...transactions, newTransaction]);
-    setMoney(newBalance);
+    setTransactions([
+      ...transactions,
+      { name, amount: Number(amount) },
+    ]);
 
     setName("");
     setAmount("");
   };
 
+  // ADD DEDUCTION
+  const addDeduction = () => {
+    if (!dName || !dAmount) return;
+
+    setDeductions([
+      ...deductions,
+      { name: dName, amount: Number(dAmount) },
+    ]);
+
+    setDName("");
+    setDAmount("");
+  };
+
+  // DELETE
+  const deleteTransaction = (index) => {
+    setTransactions(transactions.filter((_, i) => i !== index));
+  };
+
+  const deleteDeduction = (index) => {
+    setDeductions(deductions.filter((_, i) => i !== index));
+  };
+
+  // SEARCH + HIGHLIGHT
+  const highlightText = (text) => {
+    if (!search) return text;
+
+    const parts = text.split(new RegExp(`(${search})`, "gi"));
+
+    return parts.map((part, i) =>
+      part.toLowerCase() === search.toLowerCase() ? (
+        <span key={i} className="bg-yellow-100 text-black px-1 rounded">
+          {part}
+        </span>
+      ) : (
+        part
+      )
+    );
+  };
+
+  // FILTER
+  const filteredTransactions = transactions.filter((t) =>
+    t.name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const filteredDeductions = deductions.filter((d) =>
+    d.name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  // CALCULATIONS
+  const totalIncome = transactions.reduce(
+    (sum, t) => sum + Number(t.amount),
+    0
+  );
+
+  const totalDeduction = deductions.reduce(
+    (sum, d) => sum + Number(d.amount),
+    0
+  );
+
+  const finalBalance = totalIncome - totalDeduction;
+
   return (
     <div className="p-5">
-      <h1 className="text-3xl font-bold mb-4">
-        Money Management
-      </h1>
+      <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
 
-      {/* BALANCE */}
-      <div className="bg-yellow-200 p-4 rounded mb-4 text-xl font-bold">
-        Balance: ₹ {money}
-      </div>
+        {/* HEADER */}
+        <div className="flex justify-between mb-6">
+          <h1 className="text-3xl text-gray-200">Money</h1>
 
-      {/* FORM */}
-      <div className="bg-gray-100 p-4 rounded mb-4">
-        <input
-          type="text"
-          placeholder="Purpose"
-          className="border p-2 mr-2"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
+          <input
+            placeholder="Search..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="bg-white/10 p-2 rounded"
+          />
+        </div>
 
-        <input
-          type="number"
-          placeholder="Amount"
-          className="border p-2 mr-2"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-        />
+        {/* TOTALS */}
+        <div className="mb-6 space-y-1">
+          <p className="text-green-400">Total Income: ₹{totalIncome}</p>
+          <p className="text-red-400">Total Deduction: ₹{totalDeduction}</p>
+          <p className="text-blue-400 font-bold">
+            Final Balance: ₹{finalBalance}
+          </p>
+        </div>
 
-        <select
-          className="border p-2 mr-2"
-          value={type}
-          onChange={(e) => setType(e.target.value)}
-        >
-          <option value="add">Add</option>
-          <option value="deduct">Deduct</option>
-        </select>
+        {/* ADD INCOME */}
+        <div className="flex gap-2 mb-4">
+          <input
+            placeholder="Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="bg-white/10 p-2 rounded"
+          />
 
-        <button
-          onClick={addTransaction}
-          className="bg-blue-500 text-white px-4 py-2 rounded"
-        >
-          Add
-        </button>
-      </div>
+          <input
+            type="number"
+            placeholder="Amount"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            className="bg-white/10 p-2 rounded"
+          />
 
-      {/* LIST */}
-      <div>
-        {transactions.map((t, index) => (
-          <div
-            key={index}
-            className="flex justify-between bg-white p-3 mb-2 rounded shadow"
+          <button
+            onClick={addTransaction}
+            className="bg-green-600 px-4 py-2 rounded text-white"
           >
-            <span>{t.name}</span>
+            Add
+          </button>
+        </div>
 
-            <span
-              className={
-                t.type === "add"
-                  ? "text-green-600"
-                  : "text-red-600"
-              }
-            >
-              {t.type === "add" ? "+" : "-"} ₹{t.amount}
-            </span>
-          </div>
-        ))}
+        {/* ADD DEDUCTION */}
+        <div className="flex gap-2 mb-6">
+          <input
+            placeholder="Deduction Name"
+            value={dName}
+            onChange={(e) => setDName(e.target.value)}
+            className="bg-white/10 p-2 rounded"
+          />
+
+          <input
+            type="number"
+            placeholder="Amount"
+            value={dAmount}
+            onChange={(e) => setDAmount(e.target.value)}
+            className="bg-white/10 p-2 rounded"
+          />
+
+          <button
+            onClick={addDeduction}
+            className="bg-red-600 px-4 py-2 rounded text-white"
+          >
+            Add
+          </button>
+        </div>
+
+        {/* INCOME LIST */}
+        <h2 className="text-green-400 mb-2">Income</h2>
+        <div className="max-h-[200px] overflow-y-auto space-y-2 mb-6">
+          {filteredTransactions.length === 0 ? (
+            <p className="text-gray-400">No income found</p>
+          ) : (
+            filteredTransactions.map((t, i) => (
+              <div
+                key={i}
+                className="flex justify-between bg-white/5 p-3 rounded border border-white/10"
+              >
+                <span>{highlightText(t.name)}</span>
+
+                <div className="flex gap-3">
+                  <span className="text-green-400">
+                    ₹{t.amount}
+                  </span>
+
+                  <button
+                    onClick={() => deleteTransaction(i)}
+                    className="text-red-400"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* DEDUCTION LIST */}
+        <h2 className="text-red-400 mb-2">Deductions</h2>
+        <div className="max-h-[200px] overflow-y-auto space-y-2">
+          {filteredDeductions.length === 0 ? (
+            <p className="text-gray-400">No deductions found</p>
+          ) : (
+            filteredDeductions.map((d, i) => (
+              <div
+                key={i}
+                className="flex justify-between bg-white/5 p-3 rounded border border-white/10"
+              >
+                <span>{highlightText(d.name)}</span>
+
+                <div className="flex gap-3">
+                  <span className="text-red-400">
+                    ₹{d.amount}
+                  </span>
+
+                  <button
+                    onClick={() => deleteDeduction(i)}
+                    className="text-red-400"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
       </div>
     </div>
   );

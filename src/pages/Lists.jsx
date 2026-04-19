@@ -2,45 +2,7 @@ import { useState, useEffect } from "react";
 import * as XLSX from "xlsx";
 
 function Lists() {
-  const exportAllTables = () => {
-  if (!tables.length) {
-    alert("No tables to export");
-    return;
-  }
-
-  const workbook = XLSX.utils.book_new();
-
-  tables.forEach((table) => {
-    if (table.rows.length === 0) return;
-
-    const worksheet = XLSX.utils.json_to_sheet(table.rows);
-
-    XLSX.utils.book_append_sheet(
-      workbook,
-      worksheet,
-      table.name || "Sheet"
-    );
-  });
-
-  XLSX.writeFile(workbook, "All_Tables.xlsx");
-};
-  const exportToExcel = () => {
-  if (!activeTable || activeTable.rows.length === 0) {
-    alert("No data to export");
-    return;
-  }
-
-  // Convert rows to worksheet
-  const worksheet = XLSX.utils.json_to_sheet(activeTable.rows);
-
-  // Create workbook
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
-
-  // Download file
-  XLSX.writeFile(workbook, `${activeTable.name}.xlsx`);
-};
-  // LOAD FROM STORAGE
+  // LOAD
   const [tables, setTables] = useState(() => {
     const saved = localStorage.getItem("tables");
     return saved
@@ -49,27 +11,49 @@ function Lists() {
   });
 
   const [activeIndex, setActiveIndex] = useState(0);
-
   const activeTable = tables[activeIndex];
 
-  // AUTO SAVE 🔥
+  // SAVE
   useEffect(() => {
     localStorage.setItem("tables", JSON.stringify(tables));
   }, [tables]);
 
-  // Add table
+  // EXPORT
+  const exportToExcel = () => {
+    if (!activeTable || activeTable.rows.length === 0) return;
+
+    const ws = XLSX.utils.json_to_sheet(activeTable.rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, activeTable.name);
+
+    XLSX.writeFile(wb, `${activeTable.name}.xlsx`);
+  };
+
+  const exportAllTables = () => {
+    if (!tables.length) return;
+
+    const wb = XLSX.utils.book_new();
+
+    tables.forEach((t) => {
+      if (t.rows.length === 0) return;
+      const ws = XLSX.utils.json_to_sheet(t.rows);
+      XLSX.utils.book_append_sheet(wb, ws, t.name);
+    });
+
+    XLSX.writeFile(wb, "All_Tables.xlsx");
+  };
+
+  // TABLE FUNCTIONS
   const addTable = () => {
     const newTable = {
       name: `Table ${tables.length + 1}`,
       columns: [],
       rows: [],
     };
-
     setTables([...tables, newTable]);
     setActiveIndex(tables.length);
   };
 
-  // Delete table
   const deleteTable = (index) => {
     const updated = tables.filter((_, i) => i !== index);
     setTables(updated);
@@ -83,212 +67,213 @@ function Lists() {
     }
   };
 
-  // Edit table name
   const editTableName = (value) => {
     const updated = [...tables];
     updated[activeIndex].name = value;
     setTables(updated);
   };
 
-  // Add column
   const addColumn = () => {
     const newCol = `Column ${activeTable.columns.length + 1}`;
 
     const updated = [...tables];
     updated[activeIndex].columns.push(newCol);
 
-    updated[activeIndex].rows.forEach((row) => {
-      row[newCol] = "";
-    });
+    updated[activeIndex].rows.forEach((r) => (r[newCol] = ""));
 
     setTables(updated);
   };
 
-  // Delete column
-  const deleteColumn = (colIndex) => {
+  const deleteColumn = (i) => {
     const updated = [...tables];
-    const colName = updated[activeIndex].columns[colIndex];
+    const col = updated[activeIndex].columns[i];
 
-    updated[activeIndex].columns.splice(colIndex, 1);
-
-    updated[activeIndex].rows.forEach((row) => {
-      delete row[colName];
-    });
+    updated[activeIndex].columns.splice(i, 1);
+    updated[activeIndex].rows.forEach((r) => delete r[col]);
 
     setTables(updated);
   };
 
-  // Add row
   const addRow = () => {
-    const newRow = {};
-    activeTable.columns.forEach((col) => {
-      newRow[col] = "";
-    });
+    const row = {};
+    activeTable.columns.forEach((c) => (row[c] = ""));
 
     const updated = [...tables];
-    updated[activeIndex].rows.push(newRow);
+    updated[activeIndex].rows.push(row);
     setTables(updated);
   };
 
-  // Delete row
-  const deleteRow = (rowIndex) => {
+  const deleteRow = (i) => {
     const updated = [...tables];
-    updated[activeIndex].rows.splice(rowIndex, 1);
+    updated[activeIndex].rows.splice(i, 1);
     setTables(updated);
   };
 
-  // Edit column
-  const editColumn = (colIndex, value) => {
+  const editColumn = (i, val) => {
     const updated = [...tables];
-    const oldName = updated[activeIndex].columns[colIndex];
+    const old = updated[activeIndex].columns[i];
 
-    updated[activeIndex].columns[colIndex] = value;
+    updated[activeIndex].columns[i] = val;
 
-    updated[activeIndex].rows.forEach((row) => {
-      row[value] = row[oldName];
-      delete row[oldName];
+    updated[activeIndex].rows.forEach((r) => {
+      r[val] = r[old];
+      delete r[old];
     });
 
     setTables(updated);
   };
 
-  // Edit cell
-  const editCell = (rowIndex, col, value) => {
+  const editCell = (r, c, val) => {
     const updated = [...tables];
-    updated[activeIndex].rows[rowIndex][col] = value;
+    updated[activeIndex].rows[r][c] = val;
     setTables(updated);
   };
 
   return (
     <div className="p-5">
-      {/* TABLE SELECT */}
-      <div className="flex gap-2 mb-4 flex-wrap items-center">
-        {tables.map((t, index) => (
-          <div key={index} className="flex items-center gap-1">
-            <button
-              onClick={() => setActiveIndex(index)}
-              className={`px-3 py-1 ${
-                index === activeIndex
-                  ? "text-yellow-500 font-bold"
-                  : ""
-              }`}
-            >
-              {t.name}
-            </button>
+      <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+
+        <div className="flex gap-4">
+
+          {/* SIDEBAR */}
+          <div className="w-52 bg-white/5 border border-white/10 rounded-xl p-3 h-[500px] overflow-y-auto">
+            <h2 className="text-gray-300 mb-3 text-sm">Tables</h2>
+
+            {tables.map((t, i) => (
+              <div
+                key={i}
+                onClick={() => setActiveIndex(i)}
+                className={`flex justify-between items-center px-2 py-1 rounded cursor-pointer mb-1 ${
+                  i === activeIndex
+                    ? "bg-blue-600 text-white"
+                    : "hover:bg-white/10 text-gray-300"
+                }`}
+              >
+                <span className="truncate">{t.name}</span>
+
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    deleteTable(i);
+                  }}
+                  className="text-red-400 text-xs"
+                >
+                  ✖
+                </button>
+              </div>
+            ))}
 
             <button
-              onClick={() => deleteTable(index)}
-              className="text-red-500 text-sm"
+              onClick={addTable}
+              className="mt-3 w-full bg-green-600 py-1 rounded text-white"
             >
-              ❌
+              + Add Table
             </button>
           </div>
-        ))}
 
-        <button
-          onClick={addTable}
-          className="bg-blue-500 text-white px-2 py-1 rounded"
-        >
-          + Table
-        </button>
+          {/* MAIN CONTENT */}
+          <div className="flex-1">
+
+            {activeTable ? (
+              <>
+                <input
+                  value={activeTable.name}
+                  onChange={(e) => editTableName(e.target.value)}
+                  className="text-2xl mb-4 bg-transparent border-b border-gray-600 outline-none text-white"
+                />
+
+                <div className="flex gap-2 mb-4 flex-wrap">
+                  <button
+                    onClick={exportAllTables}
+                    className="bg-indigo-600 px-3 py-1 rounded text-white"
+                  >
+                    Export All
+                  </button>
+
+                  <button
+                    onClick={exportToExcel}
+                    className="bg-purple-600 px-3 py-1 rounded text-white"
+                  >
+                    Export
+                  </button>
+
+                  <button
+                    onClick={addColumn}
+                    className="bg-blue-600 px-3 py-1 rounded text-white"
+                  >
+                    + Column
+                  </button>
+
+                  <button
+                    onClick={addRow}
+                    className="bg-green-600 px-3 py-1 rounded text-white"
+                  >
+                    + Row
+                  </button>
+                </div>
+
+                <div className="overflow-auto max-h-[400px] border border-white/10 rounded">
+                  <table className="w-full text-white text-sm">
+                    <thead className="sticky top-0 bg-gray-800">
+                      <tr>
+                        {activeTable.columns.map((col, i) => (
+                          <th key={i} className="border p-2 relative">
+                            <input
+                              value={col}
+                              onChange={(e) =>
+                                editColumn(i, e.target.value)
+                              }
+                              className="bg-transparent w-full text-center outline-none"
+                            />
+
+                            <button
+                              onClick={() => deleteColumn(i)}
+                              className="absolute top-1 right-1 text-red-400 text-xs"
+                            >
+                              ✖
+                            </button>
+                          </th>
+                        ))}
+                        <th className="border p-2">Action</th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {activeTable.rows.map((row, r) => (
+                        <tr key={r} className="hover:bg-white/5">
+                          {activeTable.columns.map((col, c) => (
+                            <td key={c} className="border p-1">
+                              <input
+                                value={row[col] || ""}
+                                onChange={(e) =>
+                                  editCell(r, col, e.target.value)
+                                }
+                                className="bg-transparent w-full outline-none"
+                              />
+                            </td>
+                          ))}
+
+                          <td className="border text-center">
+                            <button
+                              onClick={() => deleteRow(r)}
+                              className="text-red-400"
+                            >
+                              ✖
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            ) : (
+              <p className="text-gray-400">No tables available</p>
+            )}
+
+          </div>
+        </div>
       </div>
-
-      {/* TABLE */}
-      {activeTable ? (
-        <>
-          <input
-            value={activeTable.name}
-            onChange={(e) => editTableName(e.target.value)}
-            className="text-2xl font-bold mb-4 outline-none border-b"
-          />
-
-          <div className="mb-3 flex gap-3">
-            <button
-              onClick={exportAllTables}
-              className="bg-indigo-500 text-white px-3 py-1 rounded"
-            >
-              Export All Tables
-            </button>
-            
-            <button
-              onClick={exportToExcel}
-              className="bg-purple-500 text-white px-3 py-1 rounded"
-            >
-              Export Excel
-            </button>
-
-            <button
-              onClick={addColumn}
-              className="bg-blue-500 text-white px-3 py-1 rounded"
-            >
-              + Column
-            </button>
-
-            <button
-              onClick={addRow}
-              className="bg-green-500 text-white px-3 py-1 rounded"
-            >
-              + Row
-            </button>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="table-auto border w-full bg-white">
-              <thead>
-                <tr>
-                  {activeTable.columns.map((col, colIndex) => (
-                    <th key={colIndex} className="border px-2 py-2 relative">
-                      <input
-                        value={col}
-                        onChange={(e) =>
-                          editColumn(colIndex, e.target.value)
-                        }
-                        className="w-full text-center font-semibold outline-none"
-                      />
-
-                      <button
-                        onClick={() => deleteColumn(colIndex)}
-                        className="absolute top-0 right-1 text-red-500 text-xs"
-                      >
-                        ✖
-                      </button>
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-
-              <tbody>
-                {activeTable.rows.map((row, rowIndex) => (
-                  <tr key={rowIndex}>
-                    {activeTable.columns.map((col, colIndex) => (
-                      <td key={colIndex} className="border p-1">
-                        <input
-                          value={row[col] || ""}
-                          onChange={(e) =>
-                            editCell(rowIndex, col, e.target.value)
-                          }
-                          className="w-full outline-none"
-                        />
-                      </td>
-                    ))}
-
-                    <td className="border text-center">
-                      <button
-                        onClick={() => deleteRow(rowIndex)}
-                        className="text-red-500"
-                      >
-                        ❌
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </>
-      ) : (
-        <p>No tables available</p>
-      )}
     </div>
   );
 }

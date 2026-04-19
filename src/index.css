@@ -2,7 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
+@import "react-big-calendar/lib/css/react-big-calendar.css";
+
 /* Fix ResizeObserver warning */
 body {
   overflow-x: hidden;
+}
+
+/* Fix ALL select dropdowns */
+
+select {
+  background-color: #1f2937 !important; /* dark */
+  color: white !important;
+  border: 1px solid #4b5563;
+}
+
+select option {
+  background-color: #1f2937 !important;
+  color: white !important;
 }

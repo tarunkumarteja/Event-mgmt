@@ -19,20 +19,17 @@ function App() {
     <Router>
   <div
     className="min-h-screen bg-cover bg-center"
-    style={{
-      backgroundImage:
-        "url('https://images.unsplash.com/photo-1557682250-33bd709cbe85')",
-    }}
+    
   >
     {/* overlay for readability */}
-    <div className="min-h-screen bg-black/20">
+    <div className="min-h-screen bg-black">
       <div className="flex">
         <Sidebar />
 
         <div
           className={`${
             isSidebarOpen ? "ml-60" : "ml-20"
-          } w-full p-4 transition-all duration-300`}
+          } w-full bg-[#111111] text-gray-200 min-h-screen p-4 transition-all duration-300`}
         >
           <Routes>
             <Route path="/" element={<Dashboard />} />
